@@ -53,6 +53,16 @@ function average(values) {
   return values.reduce((sum, value) => sum + value, 0) / values.length
 }
 
+function median(values) {
+  if (!values.length) return 0
+  const sorted = [...values].sort((left, right) => left - right)
+  const middle = Math.floor(sorted.length / 2)
+  if (sorted.length % 2 === 0) {
+    return (sorted[middle - 1] + sorted[middle]) / 2
+  }
+  return sorted[middle]
+}
+
 function parseCsv(text) {
   const rows = []
   let current = ''
@@ -233,7 +243,11 @@ function analyzeRows(rows) {
   }))
 
   const categoryPerformance = [...collectBy(originals, (item) => item.category, (item) => item.metrics.impressions).entries()]
-    .map(([label, values]) => ({ label, value: average(values) }))
+    .map(([label, values]) => ({
+      label,
+      value: median(values),
+      sampleSize: values.length,
+    }))
     .sort((left, right) => right.value - left.value)
 
   const weekdayOrder = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -842,6 +856,7 @@ function App() {
 
             <div className="glass-panel">
               <h3>Content category performance</h3>
+              <p className="panel-subtitle">median impressions per original post</p>
               <ChartBars items={analysis.categoryPerformance} color="#de6645" horizontal />
             </div>
 

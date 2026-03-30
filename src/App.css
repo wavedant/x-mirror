@@ -560,6 +560,12 @@
   text-transform: uppercase;
 }
 
+.panel-subtitle {
+  margin: -4px 0 14px;
+  color: #6f6a61;
+  font-size: 14px;
+}
+
 .combo-chart {
   position: relative;
   padding-top: 8px;
