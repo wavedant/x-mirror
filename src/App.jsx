@@ -533,57 +533,61 @@ function DonutChart({ items, total }) {
   const palette = ['#7c8cff', '#77d4ff', '#8ef6b6', '#f5c451', '#ff8e73', '#c9a8ff']
 
   return (
-    <div className="donut-wrap">
-      <svg viewBox="0 0 42 42" className="donut-chart" aria-hidden="true">
-        <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
-        {items.map((item, index) => {
-          const slice = (item.value / total) * 100
-          const node = (
-            <circle
-              key={item.label}
-              cx="21"
-              cy="21"
-              r="15.915"
-              fill="transparent"
-              stroke={palette[index % palette.length]}
-              strokeWidth="6"
-              strokeDasharray={`${slice} ${100 - slice}`}
-              strokeDashoffset={25 - cumulative}
-            />
-          )
-          cumulative += slice
-          return node
-        })}
-      </svg>
-      <div className="legend">
-        {items.map((item, index) => (
-          <div className="legend-row" key={item.label}>
-            <span className="legend-dot" style={{ background: palette[index % palette.length] }} />
-            <span>{item.label}</span>
-            <strong>{formatPercent(item.value / total, 0)}</strong>
-          </div>
-        ))}
-      </div>
-    </div>
+    <svg viewBox="0 0 42 42" className="donut-chart" aria-hidden="true">
+      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="rgba(0,0,0,0.08)" strokeWidth="6" />
+      {items.map((item, index) => {
+        const slice = (item.value / total) * 100
+        const node = (
+          <circle
+            key={item.label}
+            cx="21"
+            cy="21"
+            r="15.915"
+            fill="transparent"
+            stroke={palette[index % palette.length]}
+            strokeWidth="6"
+            strokeDasharray={`${slice} ${100 - slice}`}
+            strokeDashoffset={25 - cumulative}
+          />
+        )
+        cumulative += slice
+        return node
+      })}
+    </svg>
   )
 }
 
 function ScoreComposition({ items, total, score }) {
+  const ranked = [...items].sort((left, right) => right.value - left.value)
   return (
     <div className="score-layout">
       <div className="score-copy">
         <strong>{compactNumber(score)}</strong>
         <p>
-          X&apos;s open-sourced formula: Likes × 1 + Retweets × 20 + Replies × 13.5 +
-          Profile Clicks × 12 + Link Clicks × 11 + Bookmarks × 10
+          Your score is mostly driven by the signals below. Higher-share rows are the
+          biggest levers shaping distribution.
         </p>
       </div>
       <div className="score-visual">
-        <DonutChart items={items} total={total} />
+        <div className="score-donut-block">
+          <DonutChart items={ranked} total={total} />
+          <div className="score-formula">
+            X formula: Likes × 1 + Retweets × 20 + Replies × 13.5 + Profile Clicks × 12 +
+            Link Clicks × 11 + Bookmarks × 10
+          </div>
+        </div>
         <div className="score-breakdown">
-          {items.map((item) => (
+          {ranked.map((item, index) => (
             <div className="score-row" key={item.label}>
-              <span>{item.formula}</span>
+              <div className="score-row-copy">
+                <i
+                  className="score-dot"
+                  style={{
+                    background: ['#7c8cff', '#77d4ff', '#8ef6b6', '#f5c451', '#ff8e73', '#c9a8ff'][index % 6],
+                  }}
+                />
+                <span>{item.formula}</span>
+              </div>
               <strong>{formatPercent(item.value / total, 1)}</strong>
             </div>
           ))}
