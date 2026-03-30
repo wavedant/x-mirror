@@ -388,6 +388,43 @@ function analyzeRows(rows) {
     }))
     .sort((left, right) => right.follows - left.follows)[0]
 
+  const deepDive = {
+    whatDataSays: [
+      bestCategory
+        ? `${bestCategory.label} is your strongest lane, which means your breakout reach is coming from that content pattern rather than evenly across everything you post.`
+        : 'A few content patterns are driving most of your reach rather than all formats performing equally.',
+      mediaLift > 1.2
+        ? `Media is your biggest lever. Visual posts outperform text-only by ${mediaLift.toFixed(1)}x, so your best-performing content is usually image-led rather than plain-text.`
+        : 'Media format is not creating a huge edge yet, so the account is relying more on topic and timing than pure format advantage.',
+      bestDay
+        ? `${bestDay.label} is your highest-upside posting window, while weaker weekday slots are likely being dragged down by reactive or conversational posting.`
+        : 'Your timing pattern is uneven, with certain days creating much more upside than others.',
+      `Reach is not converting into follows strongly enough yet, which means people enjoy the posts but the account identity is not sharp enough to consistently earn the follow.`,
+    ],
+    whatAlgoSays: [
+      `Your issue is structural, not creative. You already create posts that attract attention, but too much of the score is coming from passive signals instead of conversation-heavy ones.`,
+      replyHitRate < 0.35
+        ? `Not enough originals are earning replies, so the account is generating curiosity without enough dialogue to fully unlock downstream distribution.`
+        : `Replies are showing up often enough to help distribution, but there is still room to turn more attention into conversation.`,
+    ],
+    whatToChange: [
+      'Design every important post to earn replies with a question, sharp opinion, or response hook.',
+      'Add a self-reply within the first hour to extend the life of strong posts.',
+      mediaLift > 1.2
+        ? 'Make media the default format because that is already your clearest performance advantage.'
+        : 'Test more media-led posts to see if visuals can create a stronger distribution edge.',
+      `Post originals more consistently so the account compounds around your own voice, not just replies.`,
+      'Front-load the topic in the first line so X can route the post correctly.',
+      'Build a few posts specifically for reposts, not just likes.',
+      'Keep links out of the main post and move them into the first reply.',
+      bestDay
+        ? `Protect your best window by saving your strongest originals for ${bestDay.label} or the surrounding high-upside period.`
+        : 'Protect your strongest posting windows once timing patterns become clearer.',
+    ],
+    coreTakeaway:
+      'The growth unlock is not simply writing better tweets. It is publishing more reply-driven, media-led, identity-consistent posts that turn attention into interaction and interaction into follows.',
+  }
+
   return {
     totals,
     posts: normalized.length,
@@ -408,6 +445,7 @@ function analyzeRows(rows) {
       peakFollowMonth: peakFollowMonth?.label ?? 'n/a',
       peakFollows: peakFollowMonth?.follows ?? 0,
     },
+    deepDive,
   }
 }
 
@@ -901,6 +939,46 @@ function App() {
                   <p>{item.detail}</p>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="deep-dive-tab">
+            <div className="recommendations-head">
+              <div>
+                <span className="label-chip">deep dive</span>
+                <h3>what your X analysis actually means</h3>
+              </div>
+              <p>Compressed interpretation of the data, the algorithmic implication, and what to change next.</p>
+            </div>
+
+            <div className="deep-dive-grid">
+              <div className="deep-dive-card">
+                <strong>What your data says</strong>
+                {analysis.deepDive.whatDataSays.map((item) => (
+                  <p key={item}>{item}</p>
+                ))}
+              </div>
+
+              <div className="deep-dive-card">
+                <strong>What the algo is telling you</strong>
+                {analysis.deepDive.whatAlgoSays.map((item) => (
+                  <p key={item}>{item}</p>
+                ))}
+              </div>
+
+              <div className="deep-dive-card wide">
+                <strong>What to change</strong>
+                {analysis.deepDive.whatToChange.map((item, index) => (
+                  <p key={item}>
+                    {index + 1}. {item}
+                  </p>
+                ))}
+              </div>
+
+              <div className="deep-dive-card wide takeaway">
+                <strong>Core takeaway</strong>
+                <p>{analysis.deepDive.coreTakeaway}</p>
+              </div>
             </div>
           </div>
         </section>
