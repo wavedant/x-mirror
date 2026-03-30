@@ -24,8 +24,8 @@ export default async function handler(request, response) {
       verification_json: body.verification,
       rows_json: body.rows,
       analysis_json: body.analysis,
-      total_posts: body.analysis?.summary?.posts ?? 0,
-      total_impressions: body.analysis?.summary?.totals?.impressions ?? 0,
+      total_posts: body.analysis?.posts ?? 0,
+      total_impressions: body.analysis?.totals?.impressions ?? 0,
     }
 
     const supabaseResponse = await fetch(`${supabaseUrl}/rest/v1/analyses`, {

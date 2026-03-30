@@ -650,6 +650,29 @@ function ScoreComposition({ items, total, score }) {
   )
 }
 
+async function saveAnalysis({ handle, verification, rows, analysis }) {
+  const endpoint = import.meta.env.VITE_ANALYSIS_SAVE_URL
+  if (!endpoint) return { skipped: true }
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      twitterHandle: handle,
+      twitterId: verification?.user?.id ?? null,
+      verification,
+      rows,
+      analysis,
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to save analysis')
+  }
+
+  return response.json()
+}
+
 function App() {
   const [screen, setScreen] = useState('home')
   const [handle, setHandle] = useState('')
@@ -697,10 +720,22 @@ function App() {
     setStatus('')
   }
 
-  function onReveal() {
+  async function onReveal() {
     if (!fileState.valid) return
-    setAnalysis(analyzeRows(fileState.file))
+    const nextAnalysis = analyzeRows(fileState.file)
+    setAnalysis(nextAnalysis)
     setScreen('mirror')
+
+    try {
+      await saveAnalysis({
+        handle,
+        verification,
+        rows: fileState.file,
+        analysis: nextAnalysis,
+      })
+    } catch (error) {
+      console.error(error)
+    }
   }
 
   const scoreTotal = analysis?.scoreMix.reduce((sum, item) => sum + item.value, 0) || 1
