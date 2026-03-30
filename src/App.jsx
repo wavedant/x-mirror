@@ -150,6 +150,7 @@ function normalizeRows(rows) {
         reposts: number(row.Reposts),
         profileVisits: number(row['Profile visits']),
         detailExpands: number(row['Detail Expands']),
+        urlClicks: number(row['URL Clicks']),
       }
 
       const algoScore =
@@ -265,12 +266,36 @@ function analyzeRows(rows) {
   }))
 
   const scoreMix = [
-    { label: 'likes', value: normalized.reduce((sum, item) => sum + item.metrics.likes * ALGO_WEIGHTS.like, 0) },
-    { label: 'replies', value: normalized.reduce((sum, item) => sum + item.metrics.replies * ALGO_WEIGHTS.reply, 0) },
-    { label: 'reposts', value: normalized.reduce((sum, item) => sum + item.metrics.reposts * ALGO_WEIGHTS.repost, 0) },
-    { label: 'bookmarks', value: normalized.reduce((sum, item) => sum + item.metrics.bookmarks * ALGO_WEIGHTS.bookmark, 0) },
-    { label: 'profile visits', value: normalized.reduce((sum, item) => sum + item.metrics.profileVisits * ALGO_WEIGHTS.profileVisit, 0) },
-    { label: 'follows', value: normalized.reduce((sum, item) => sum + item.metrics.follows * ALGO_WEIGHTS.follow, 0) },
+    {
+      label: 'Profile visits',
+      formula: "Profile visits × 12",
+      value: normalized.reduce((sum, item) => sum + item.metrics.profileVisits * ALGO_WEIGHTS.profileVisit, 0),
+    },
+    {
+      label: 'Bookmarks',
+      formula: "Bookmarks × 10",
+      value: normalized.reduce((sum, item) => sum + item.metrics.bookmarks * ALGO_WEIGHTS.bookmark, 0),
+    },
+    {
+      label: 'URL clicks',
+      formula: "URL clicks × 11",
+      value: normalized.reduce((sum, item) => sum + item.metrics.urlClicks * 11, 0),
+    },
+    {
+      label: 'Likes',
+      formula: "Likes × 1",
+      value: normalized.reduce((sum, item) => sum + item.metrics.likes * ALGO_WEIGHTS.like, 0),
+    },
+    {
+      label: 'Replies',
+      formula: "Replies × 13.5",
+      value: normalized.reduce((sum, item) => sum + item.metrics.replies * ALGO_WEIGHTS.reply, 0),
+    },
+    {
+      label: 'Reposts',
+      formula: "Retweets × 20",
+      value: normalized.reduce((sum, item) => sum + item.metrics.reposts * ALGO_WEIGHTS.repost, 0),
+    },
   ].filter((item) => item.value > 0)
 
   const winning = []
@@ -543,6 +568,31 @@ function DonutChart({ items, total }) {
   )
 }
 
+function ScoreComposition({ items, total, score }) {
+  return (
+    <div className="score-layout">
+      <div className="score-copy">
+        <strong>{compactNumber(score)}</strong>
+        <p>
+          X&apos;s open-sourced formula: Likes × 1 + Retweets × 20 + Replies × 13.5 +
+          Profile Clicks × 12 + Link Clicks × 11 + Bookmarks × 10
+        </p>
+      </div>
+      <div className="score-visual">
+        <DonutChart items={items} total={total} />
+        <div className="score-breakdown">
+          {items.map((item) => (
+            <div className="score-row" key={item.label}>
+              <span>{item.formula}</span>
+              <strong>{formatPercent(item.value / total, 1)}</strong>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function App() {
   const [screen, setScreen] = useState('home')
   const [handle, setHandle] = useState('')
@@ -795,19 +845,20 @@ function App() {
 
             <div className="glass-panel">
               <h3>Your algo score composition</h3>
-              <div className="score-head">
-                <strong>{compactNumber(analysis.algoScore)}</strong>
-                <span>open-source X weighting approximation</span>
-              </div>
-              <DonutChart items={analysis.scoreMix} total={scoreTotal} />
+              <ScoreComposition
+                items={analysis.scoreMix}
+                total={scoreTotal}
+                score={analysis.algoScore}
+              />
             </div>
 
             <div className="glass-panel">
               <h3>Where you&apos;re winning</h3>
               <div className="signal-list">
                 {analysis.winning.map((item) => (
-                  <div className="signal-pill good" key={item}>
-                    {item}
+                  <div className="signal-card good" key={item}>
+                    <strong>winning signal</strong>
+                    <p>{item}</p>
                   </div>
                 ))}
               </div>
@@ -817,8 +868,9 @@ function App() {
               <h3>Where you&apos;re leaving engagement on the table</h3>
               <div className="signal-list">
                 {analysis.leaving.map((item) => (
-                  <div className="signal-pill warn" key={item}>
-                    {item}
+                  <div className="signal-card warn" key={item}>
+                    <strong>gap to fix</strong>
+                    <p>{item}</p>
                   </div>
                 ))}
               </div>

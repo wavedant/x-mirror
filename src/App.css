@@ -351,6 +351,59 @@
   color: #16130f;
 }
 
+.score-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.score-copy strong {
+  display: block;
+  font-size: 48px;
+  color: #16130f;
+  letter-spacing: -0.05em;
+  margin-bottom: 8px;
+}
+
+.score-copy p {
+  color: #5d5952;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.score-visual {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 20px;
+  align-items: center;
+}
+
+.score-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.score-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.score-row span {
+  color: #5d5952;
+  font-size: 14px;
+}
+
+.score-row strong {
+  color: #16130f;
+  font-size: 18px;
+}
+
 .donut-wrap {
   display: grid;
   grid-template-columns: 160px 1fr;
@@ -383,20 +436,34 @@
   border-radius: 50%;
 }
 
-.signal-pill {
+.signal-card {
   border-radius: 18px;
-  padding: 14px 16px;
+  padding: 16px 18px;
   line-height: 1.6;
+  border: 1px solid rgba(22, 19, 15, 0.08);
+  background: rgba(255, 255, 255, 0.7);
 }
 
-.signal-pill.good {
-  background: rgba(20, 104, 66, 0.24);
-  color: #baf3ce;
+.signal-card strong {
+  display: block;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 11px;
 }
 
-.signal-pill.warn {
-  background: rgba(114, 62, 26, 0.28);
-  color: #ffd9a8;
+.signal-card p {
+  margin: 0;
+  color: #2d2923;
+  font-size: 17px;
+}
+
+.signal-card.good strong {
+  color: #2f8b63;
+}
+
+.signal-card.warn strong {
+  color: #b37433;
 }
 
 .recommendations-tab {
@@ -653,6 +720,10 @@
 
   .recommendation-grid,
   .comparison-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .score-visual {
     grid-template-columns: 1fr;
   }
 
