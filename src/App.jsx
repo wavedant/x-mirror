@@ -294,6 +294,50 @@ function analyzeRows(rows) {
     leaving.push('You are still underusing the format that already wins for you: visual-first originals.')
   }
 
+  const recommendations = []
+
+  if (mediaLift > 1.5) {
+    recommendations.push({
+      title: 'default to media-first originals',
+      detail: `Your media posts already outperform text-only by ${mediaLift.toFixed(1)}x. Shift at least 70% of your original posts to photo, screenshot, or visual-led formats.`,
+    })
+  }
+
+  if (replyHitRate < 0.35) {
+    recommendations.push({
+      title: 'optimize for replies, not just impressions',
+      detail: `Only ${formatPercent(replyHitRate, 0)} of your original posts spark replies. Add a disagreement hook, direct question, or opinion-led ending to every important post.`,
+    })
+  }
+
+  if (bestDay) {
+    recommendations.push({
+      title: 'protect your highest-leverage posting window',
+      detail: `${bestDay.label} is your strongest day. Post your highest-upside original there and move low-signal replies or experiments to weaker days.`,
+    })
+  }
+
+  if (bestCategory) {
+    recommendations.push({
+      title: 'double down on your winning content lane',
+      detail: `${bestCategory.label} is your strongest category by average reach. Turn it into a repeatable series instead of occasional isolated posts.`,
+    })
+  }
+
+  if (followRate < 0.0002) {
+    recommendations.push({
+      title: 'convert reach into follows with a sharper identity',
+      detail: `Your follow conversion is only ${formatPercent(followRate, 3)}. Pin a positioning post, repeat your core lens weekly, and make viral posts point back to a recognizable theme.`,
+    })
+  }
+
+  if (recommendations.length < 5) {
+    recommendations.push({
+      title: 'reduce outbound-link dependence',
+      detail: 'Keep the main post self-contained and move links into the first reply so the post can compete on-native before sending users away.',
+    })
+  }
+
   return {
     totals,
     posts: normalized.length,
@@ -306,6 +350,7 @@ function analyzeRows(rows) {
     algoScore: totals.algoScore,
     winning,
     leaving,
+    recommendations: recommendations.slice(0, 6),
   }
 }
 
@@ -699,6 +744,29 @@ function App() {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+
+          <div className="recommendations-tab">
+            <div className="recommendations-head">
+              <div>
+                <span className="label-chip">final tab</span>
+                <h3>actionable reccomendations</h3>
+              </div>
+              <p>
+                exact changes to make if you want to 10X engagement from what worked
+                over the last 12 months.
+              </p>
+            </div>
+
+            <div className="recommendation-grid">
+              {analysis.recommendations.map((item, index) => (
+                <div className="recommendation-card" key={item.title}>
+                  <span>0{index + 1}</span>
+                  <strong>{item.title}</strong>
+                  <p>{item.detail}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
