@@ -564,7 +564,7 @@ function App() {
         return
       }
       setVerification(result)
-      setStatus('Premium account verified. Continue to export and upload.')
+      setStatus('')
       setScreen('upload')
     } catch {
       setVerification({ premium: false })
@@ -578,38 +578,16 @@ function App() {
     const file = event.target.files?.[0]
     if (!file) return
 
-    if (file.size > 10 * 1024 * 1024) {
-      setStatus('Upload must be 10 MB or smaller.')
-      setFileState({ file: null, fileName: '', valid: false })
-      return
-    }
-
     const text = await file.text()
     const rows = parseCsv(text)
-    const normalized = normalizeRows(rows)
-    const firstDate = normalized[0]?.date
-    const lastDate = normalized[normalized.length - 1]?.date
-    const monthSpan =
-      firstDate && lastDate
-        ? (lastDate.getFullYear() - firstDate.getFullYear()) * 12 +
-          (lastDate.getMonth() - firstDate.getMonth()) +
-          1
-        : 0
-
-    const validFormat =
-      rows.length > 0 &&
-      ['Post id', 'Date', 'Post text', 'Impressions', 'Likes', 'Engagements'].every(
-        (header) => header in rows[0],
-      )
-
-    if (!validFormat || monthSpan < 11) {
-      setStatus('Upload a native X analytics CSV with roughly 12 months of data between Mar 2025 and Mar 2026.')
+    if (!rows.length) {
+      setStatus('Upload a CSV file to continue.')
       setFileState({ file: null, fileName: '', valid: false })
       return
     }
 
     setFileState({ file: rows, fileName: file.name, valid: true })
-    setStatus('Upload verified. You can reveal the mirror now.')
+    setStatus('')
   }
 
   function onReveal() {
@@ -696,10 +674,7 @@ function App() {
             <div className="upload-card">
               <span className="label-chip">step 1</span>
               <h2>export analytics</h2>
-              <p>
-                export analytics for 12 months Mar 2025 - Mar 20206 for a reasonable
-                and actionable analysis.
-              </p>
+              <p>open X analytics and export your content analytics CSV.</p>
               <a className="ghost-button" href={STEP_LINK} target="_blank" rel="noreferrer">
                 open export link
               </a>
@@ -708,10 +683,7 @@ function App() {
             <div className="upload-card">
               <span className="label-chip">step 2</span>
               <h2>upload CSV</h2>
-              <p>
-                verify uploads for 12 months of data in desired format exported from
-                twitter. max 10 mb.
-              </p>
+              <p>upload your analytics CSV to start generating the mirror.</p>
               <label className="upload-field">
                 <input type="file" accept=".csv,text/csv" onChange={onUpload} />
                 <span>{fileState.fileName || 'choose analytics csv'}</span>
@@ -721,7 +693,7 @@ function App() {
             <div className="upload-card">
               <span className="label-chip">step 3</span>
               <h2>reveal mirror</h2>
-              <p>once validation succeeds, reveal your custom X growth mirror.</p>
+              <p>reveal your custom X growth mirror.</p>
               <button className="cta-button" onClick={onReveal} disabled={!fileState.valid}>
                 reveal mirror
               </button>
