@@ -180,6 +180,20 @@
   gap: 18px;
 }
 
+.premium-callout {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(124, 140, 255, 0.14);
+  border: 1px solid rgba(124, 140, 255, 0.28);
+  color: #aeb8ff;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .verify-form {
   display: flex;
   gap: 12px;

@@ -648,9 +648,9 @@ function App() {
 
             <div className="verify-panel">
               <h2>sign in without signing in</h2>
+              <div className="premium-callout">works only for X premium users</div>
               <p>
-                add your username to verify X Premium. the tool is accessible only to
-                premium users. no auth required.
+                add your username to verify X Premium access. no auth required.
               </p>
               <form className="verify-form" onSubmit={onVerify}>
                 <input
