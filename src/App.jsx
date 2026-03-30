@@ -8,11 +8,9 @@ const ALGO_WEIGHTS = {
   like: 1,
   reply: 13.5,
   repost: 20,
-  bookmark: 8,
+  bookmark: 10,
   profileVisit: 12,
-  detailExpand: 3,
-  share: 9,
-  follow: 25,
+  urlClick: 11,
 }
 
 const CATEGORY_RULES = [
@@ -129,6 +127,17 @@ function detectCategory(text) {
   return matched?.name ?? 'misc + personal'
 }
 
+function calculateAlgoScore(metrics) {
+  return (
+    metrics.likes * ALGO_WEIGHTS.like +
+    metrics.replies * ALGO_WEIGHTS.reply +
+    metrics.reposts * ALGO_WEIGHTS.repost +
+    metrics.bookmarks * ALGO_WEIGHTS.bookmark +
+    metrics.profileVisits * ALGO_WEIGHTS.profileVisit +
+    metrics.urlClicks * ALGO_WEIGHTS.urlClick
+  )
+}
+
 function normalizeRows(rows) {
   return rows
     .map((row) => {
@@ -153,15 +162,7 @@ function normalizeRows(rows) {
         urlClicks: number(row['URL Clicks']),
       }
 
-      const algoScore =
-        metrics.likes * ALGO_WEIGHTS.like +
-        metrics.replies * ALGO_WEIGHTS.reply +
-        metrics.reposts * ALGO_WEIGHTS.repost +
-        metrics.bookmarks * ALGO_WEIGHTS.bookmark +
-        metrics.profileVisits * ALGO_WEIGHTS.profileVisit +
-        metrics.detailExpands * ALGO_WEIGHTS.detailExpand +
-        metrics.shares * ALGO_WEIGHTS.share +
-        metrics.follows * ALGO_WEIGHTS.follow
+      const algoScore = calculateAlgoScore(metrics)
 
       return {
         id: row['Post id'],
@@ -279,7 +280,7 @@ function analyzeRows(rows) {
     {
       label: 'URL clicks',
       formula: "URL clicks × 11",
-      value: normalized.reduce((sum, item) => sum + item.metrics.urlClicks * 11, 0),
+      value: normalized.reduce((sum, item) => sum + item.metrics.urlClicks * ALGO_WEIGHTS.urlClick, 0),
     },
     {
       label: 'Likes',
