@@ -113,6 +113,14 @@ function monthKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 }
 
+function monthLabelFromKey(key) {
+  const [year, month] = key.split('-').map(Number)
+  return new Date(year, month - 1, 1).toLocaleDateString('en-US', {
+    month: 'short',
+    year: '2-digit',
+  })
+}
+
 function detectCategory(text) {
   const lowered = text.toLowerCase()
   const matched = CATEGORY_RULES.find((rule) =>
@@ -216,6 +224,7 @@ function analyzeRows(rows) {
 
   const monthlyTrend = [...monthlyMap.values()].map((item) => ({
     label: item.label,
+    displayLabel: monthLabelFromKey(item.label),
     impressions: item.impressions,
     posts: item.posts,
     engagementRate: item.impressionsForRate ? item.engagements / item.impressionsForRate : 0,
@@ -231,16 +240,20 @@ function analyzeRows(rows) {
     .sort((left, right) => weekdayOrder.indexOf(left.label) - weekdayOrder.indexOf(right.label))
 
   const mediaVsText = ['media', 'text'].map((label) => {
-    const values = originals
-      .filter((item) => item.mediaType === label)
-      .map((item) => item.metrics.impressions)
-    return { label: label === 'media' ? 'media' : 'text-only', value: average(values) }
+    const matching = originals.filter((item) => item.mediaType === label)
+    return {
+      label: label === 'media' ? 'media' : 'text-only',
+      value: average(matching.map((item) => item.metrics.impressions)),
+      likes: average(matching.map((item) => item.metrics.likes)),
+      posts: matching.length,
+    }
   })
 
   const lengthSweetSpot = [
     { label: '<50', test: (value) => value < 50 },
     { label: '50-100', test: (value) => value >= 50 && value <= 100 },
-    { label: '101-280', test: (value) => value > 100 && value <= 280 },
+    { label: '100-200', test: (value) => value > 100 && value <= 200 },
+    { label: '200-280', test: (value) => value > 200 && value <= 280 },
     { label: '280+', test: (value) => value > 280 },
   ].map((bucket) => ({
     label: bucket.label,
@@ -338,6 +351,18 @@ function analyzeRows(rows) {
     })
   }
 
+  const avgPostsPerDay = normalized.length / 365
+  const avgImpressionsPerPost = totals.impressions / Math.max(normalized.length, 1)
+  const avgLikesPerPost = totals.likes / Math.max(normalized.length, 1)
+  const peakFollowMonth = [...monthlyTrend]
+    .map((item) => ({
+      label: item.displayLabel,
+      follows: normalized
+        .filter((row) => row.month === item.label)
+        .reduce((sum, row) => sum + row.metrics.follows, 0),
+    }))
+    .sort((left, right) => right.follows - left.follows)[0]
+
   return {
     totals,
     posts: normalized.length,
@@ -351,6 +376,13 @@ function analyzeRows(rows) {
     winning,
     leaving,
     recommendations: recommendations.slice(0, 6),
+    overview: {
+      avgPostsPerDay,
+      avgImpressionsPerPost,
+      avgLikesPerPost,
+      peakFollowMonth: peakFollowMonth?.label ?? 'n/a',
+      peakFollows: peakFollowMonth?.follows ?? 0,
+    },
   }
 }
 
@@ -369,17 +401,17 @@ async function verifyHandle(handle) {
   return response.json()
 }
 
-function ChartBars({ items, color = 'var(--accent)' }) {
+function ChartBars({ items, color = 'var(--accent)', horizontal = false, percentSuffix = '' }) {
   const max = Math.max(...items.map((item) => item.value || item.impressions || 0), 1)
   return (
-    <div className="chart-bars">
+    <div className={`chart-bars ${horizontal ? 'horizontal' : ''}`}>
       {items.map((item) => {
         const value = item.value ?? item.impressions ?? 0
         return (
           <div className="chart-row" key={item.label}>
             <div className="chart-meta">
               <span>{item.label}</span>
-              <strong>{compactNumber(value)}</strong>
+              <strong>{percentSuffix ? `${value.toFixed(1)}${percentSuffix}` : compactNumber(value)}</strong>
             </div>
             <div className="chart-track">
               <div
@@ -390,6 +422,83 @@ function ChartBars({ items, color = 'var(--accent)' }) {
           </div>
         )
       })}
+    </div>
+  )
+}
+
+function MonthlyComboChart({ items }) {
+  const maxImpressions = Math.max(...items.map((item) => item.impressions), 1)
+  const maxPosts = Math.max(...items.map((item) => item.posts), 1)
+
+  return (
+    <div className="combo-chart">
+      <div className="combo-legend">
+        <span><i className="legend-swatch blue" />Impressions</span>
+        <span><i className="legend-swatch gold" />Posts</span>
+      </div>
+      <div className="combo-grid">
+        <svg className="combo-line" viewBox={`0 0 ${items.length * 70} 220`} preserveAspectRatio="none">
+          <polyline
+            fill="none"
+            stroke="#e8a53d"
+            strokeWidth="3"
+            points={items
+              .map((item, index) => {
+                const x = index * 70 + 35
+                const y = 200 - (item.posts / maxPosts) * 160
+                return `${x},${y}`
+              })
+              .join(' ')}
+          />
+          {items.map((item, index) => {
+            const x = index * 70 + 35
+            const y = 200 - (item.posts / maxPosts) * 160
+            return <circle key={item.label} cx={x} cy={y} r="5" fill="#e8a53d" />
+          })}
+        </svg>
+
+        {items.map((item) => (
+          <div className="combo-col" key={item.label}>
+            <div className="combo-bar-wrap">
+              <div
+                className="combo-bar"
+                style={{ height: `${(item.impressions / maxImpressions) * 100}%` }}
+              />
+            </div>
+            <span>{item.displayLabel}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function AreaChart({ items }) {
+  const width = items.length * 72
+  const height = 220
+  const max = Math.max(...items.map((item) => item.value), 1)
+  const points = items.map((item, index) => {
+    const x = index * 72 + 24
+    const y = height - (item.value / max) * 170 - 20
+    return { ...item, x, y }
+  })
+  const line = points.map((point) => `${point.x},${point.y}`).join(' ')
+  const area = `0,${height} ${points.map((point) => `${point.x},${point.y}`).join(' ')} ${width},${height}`
+
+  return (
+    <div className="area-chart-wrap">
+      <svg viewBox={`0 0 ${width} ${height}`} className="area-chart" preserveAspectRatio="none">
+        <polygon points={area} className="area-fill" />
+        <polyline points={line} className="area-line" />
+        {points.map((point) => (
+          <circle key={point.label} cx={point.x} cy={point.y} r="5" className="area-dot" />
+        ))}
+      </svg>
+      <div className="area-labels">
+        {items.map((item) => (
+          <span key={item.label}>{item.displayLabel}</span>
+        ))}
+      </div>
     </div>
   )
 }
@@ -636,82 +745,79 @@ function App() {
 
           <div className="overview-grid">
             <div className="glass-card">
-              <span>impressions</span>
-              <strong>{compactNumber(analysis.totals.impressions)}</strong>
-            </div>
-            <div className="glass-card">
-              <span>tweets</span>
+              <span>Total posts</span>
               <strong>{compactNumber(analysis.posts)}</strong>
+              <small>~{analysis.overview.avgPostsPerDay.toFixed(1)}/day avg</small>
             </div>
             <div className="glass-card">
-              <span>new follows</span>
-              <strong>{compactNumber(analysis.totals.follows)}</strong>
+              <span>Impressions</span>
+              <strong>{compactNumber(analysis.totals.impressions)}</strong>
+              <small>{compactNumber(analysis.overview.avgImpressionsPerPost)} avg/post</small>
             </div>
             <div className="glass-card">
-              <span>likes</span>
+              <span>Likes</span>
               <strong>{compactNumber(analysis.totals.likes)}</strong>
+              <small>{analysis.overview.avgLikesPerPost.toFixed(1)} avg/post</small>
+            </div>
+            <div className="glass-card">
+              <span>New follows</span>
+              <strong>{compactNumber(analysis.totals.follows)}</strong>
+              <small>
+                Peak: {analysis.overview.peakFollowMonth}
+                {analysis.overview.peakFollows ? ` (${analysis.overview.peakFollows})` : ''}
+              </small>
             </div>
           </div>
 
           <div className="mirror-grid">
             <div className="glass-panel">
               <h3>Monthly impressions vs posting volume</h3>
-              <div className="dual-metric-chart">
-                {analysis.monthlyTrend.map((item) => (
-                  <div className="dual-row" key={item.label}>
-                    <div className="dual-head">
-                      <span>{item.label}</span>
-                      <span>{compactNumber(item.impressions)} / {item.posts} posts</span>
-                    </div>
-                    <div className="dual-track">
-                      <div
-                        className="dual-fill primary"
-                        style={{
-                          width: `${(item.impressions / Math.max(...analysis.monthlyTrend.map((point) => point.impressions), 1)) * 100}%`,
-                        }}
-                      />
-                    </div>
-                    <div className="dual-track secondary">
-                      <div
-                        className="dual-fill secondary"
-                        style={{
-                          width: `${(item.posts / Math.max(...analysis.monthlyTrend.map((point) => point.posts), 1)) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <MonthlyComboChart items={analysis.monthlyTrend} />
             </div>
 
             <div className="glass-panel">
               <h3>Content category performance</h3>
-              <ChartBars items={analysis.categoryPerformance} color="#8ef6b6" />
+              <ChartBars items={analysis.categoryPerformance} color="#de6645" horizontal />
             </div>
 
             <div className="glass-panel">
               <h3>Day of week performance</h3>
-              <ChartBars items={analysis.weekdayPerformance} color="#77d4ff" />
+              <ChartBars items={analysis.weekdayPerformance} color="#de6645" />
             </div>
 
             <div className="glass-panel">
               <h3>Media vs text-only</h3>
-              <ChartBars items={analysis.mediaVsText} color="#f5c451" />
+              <div className="comparison-grid">
+                {analysis.mediaVsText.map((item) => (
+                  <div className="comparison-card" key={item.label}>
+                    <span>{item.label === 'media' ? `With media (${item.posts} posts)` : `Text-only (${item.posts} posts)`}</span>
+                    <strong>{compactNumber(item.value)}</strong>
+                    <small>avg impressions / {item.likes.toFixed(1)} avg likes</small>
+                  </div>
+                ))}
+              </div>
+              <p className="comparison-note">
+                Media posts get{' '}
+                {(analysis.mediaVsText[0]?.value / Math.max(analysis.mediaVsText[1]?.value || 1, 1)).toFixed(1)}x
+                {' '}more impressions and{' '}
+                {(analysis.mediaVsText[0]?.likes / Math.max(analysis.mediaVsText[1]?.likes || 1, 1)).toFixed(1)}x
+                {' '}more likes
+              </p>
             </div>
 
             <div className="glass-panel">
               <h3>Post length sweet spot</h3>
-              <ChartBars items={analysis.lengthSweetSpot} color="#c9a8ff" />
+              <ChartBars items={analysis.lengthSweetSpot} color="#7d73d2" />
             </div>
 
             <div className="glass-panel">
               <h3>Engagement rate by month</h3>
-              <ChartBars
+              <AreaChart
                 items={analysis.monthlyTrend.map((item) => ({
                   label: item.label,
+                  displayLabel: item.displayLabel,
                   value: item.engagementRate * 100,
                 }))}
-                color="#ff8e73"
               />
             </div>
 
